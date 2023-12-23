@@ -4,9 +4,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.sql.Connection;
-import java.sql.DriverManager;
-import java.sql.SQLException;
+import java.sql.*;
 import java.util.Scanner;
 
 public class HospitalManagementSystem extends JFrame {
@@ -20,20 +18,17 @@ public class HospitalManagementSystem extends JFrame {
         this.connection = connection;
         this.scanner = scanner;
 
-        // Set up the frame
         setTitle("Hospital Management System - Login");
         setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         setSize(300, 150);
         setLocationRelativeTo(null);
 
-        // Create components for login GUI
         JLabel userLabel = new JLabel("Username:");
         JLabel passwordLabel = new JLabel("Password:");
         JTextField userTextField = new JTextField();
         JPasswordField passwordField = new JPasswordField();
         JButton loginButton = new JButton("Login");
 
-        // Set up the layout for login GUI
         setLayout(new GridLayout(4, 2));
         add(userLabel);
         add(userTextField);
@@ -42,14 +37,12 @@ public class HospitalManagementSystem extends JFrame {
         add(new JLabel()); // Empty label for spacing
         add(loginButton);
 
-        // Add action listener for the login button
         loginButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
                 String username = userTextField.getText().trim();
                 String password = new String(passwordField.getPassword());
 
-                // Replace with your actual login logic
                 if (isValidLogin(username, password)) {
                     showMainGUI();
                 } else {
@@ -59,38 +52,33 @@ public class HospitalManagementSystem extends JFrame {
         });
     }
 
-    // Method to check the validity of the login credentials (replace with your actual implementation)
     private boolean isValidLogin(String username, String password) {
         return username.equals("admin") && password.equals("admin");
     }
 
-    // Method to show the main functionality GUI
     private void showMainGUI() {
-        // Create a new JPanel for the main functionality
         mainPanel = new JPanel();
 
-        // Create buttons for the main functionality
         JButton addPatientButton = new JButton("Add Patient");
         JButton viewPatientsButton = new JButton("View Patients");
         JButton addDoctorButton = new JButton("Add Doctor");
         JButton viewDoctorsButton = new JButton("View Doctors");
+        JButton viewAppointmentsButton = new JButton("View Appointments");
         JButton bookAppointmentButton = new JButton("Book Appointment");
         JButton exitButton = new JButton("Exit");
 
-        // Set up the layout for main functionality GUI
-        mainPanel.setLayout(new GridLayout(6, 1));
+        mainPanel.setLayout(new GridLayout(7, 1));
         mainPanel.add(addPatientButton);
         mainPanel.add(viewPatientsButton);
         mainPanel.add(addDoctorButton);
         mainPanel.add(viewDoctorsButton);
+        mainPanel.add(viewAppointmentsButton);
         mainPanel.add(bookAppointmentButton);
         mainPanel.add(exitButton);
 
-        // Create instances of PatientGUI and DoctorGUI
         patientGUI = new Patient(connection, scanner);
         doctorGUI = new Doctor(connection, scanner);
 
-        // Add action listeners to the buttons
         addPatientButton.addActionListener(new ActionListener() {
             @Override
             public void actionPerformed(ActionEvent e) {
@@ -125,6 +113,12 @@ public class HospitalManagementSystem extends JFrame {
                 bookAppointment();
             }
         });
+        viewAppointmentsButton.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent e) {
+                viewAppointments();
+            }
+        });
 
         exitButton.addActionListener(new ActionListener() {
             @Override
@@ -133,18 +127,72 @@ public class HospitalManagementSystem extends JFrame {
             }
         });
 
-        // Set the content pane to the new JPanel
         setContentPane(mainPanel);
-
-        // Refresh the frame to show the new components
         revalidate();
         repaint();
     }
 
-    // ... (rest of the code)
-
     private void bookAppointment() {
-        // ... (rest of the code)
+        JTextField patientIdField = new JTextField();
+        JTextField doctorIdField = new JTextField();
+
+        Object[] message = {
+                "Patient ID:", patientIdField,
+                "Doctor ID:", doctorIdField
+        };
+
+        int option = JOptionPane.showConfirmDialog(null, message, "Book Appointment", JOptionPane.OK_CANCEL_OPTION);
+
+        if (option == JOptionPane.OK_OPTION) {
+            try {
+                int patientId = Integer.parseInt(patientIdField.getText());
+                int doctorId = Integer.parseInt(doctorIdField.getText());
+                JOptionPane.showMessageDialog(this, "Appointment booked successfully!");
+            } catch (NumberFormatException e) {
+                JOptionPane.showMessageDialog(this, "Invalid input. Please enter valid numbers for Patient ID and Doctor ID.");
+            }
+        } else {
+            JOptionPane.showMessageDialog(this, "Do your job for humanity's sake.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    private void viewAppointments() {
+        try {
+            String query = "SELECT * FROM appointments";
+            PreparedStatement preparedStatement = connection.prepareStatement(query);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                StringBuilder appointmentInfo = new StringBuilder("Appointments:\n");
+                appointmentInfo.append("|-----------------------------------------------------------------------------|\n");
+                appointmentInfo.append("| Appointment ID | Patient ID | Doctor ID | Appointment Date         |\n");
+                appointmentInfo.append("|-----------------------------------------------------------------------------|\n");
+
+                do {
+                    try {
+                        int appointmentId = resultSet.getInt("id");
+                        int patientId = resultSet.getInt("patient_id");
+                        int doctorId = resultSet.getInt("doctor_id");
+                        String appointmentDate = resultSet.getString("appointment_date");
+
+                        appointmentInfo.append(String.format("| %-15s | %-10s | %-9s | %-25s\n", appointmentId, patientId, doctorId, appointmentDate));
+                        appointmentInfo.append("|------------------------------------------------------------------------------|\n");
+                    } catch (SQLException e) {
+                        e.printStackTrace();
+                        JOptionPane.showMessageDialog(this, "Error retrieving appointment information: " + e.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+                    }
+                } while (resultSet.next());
+
+                JTextArea textArea = new JTextArea(appointmentInfo.toString());
+                textArea.setEditable(false);
+                JOptionPane.showMessageDialog(this, new JScrollPane(textArea), "View Appointments", JOptionPane.INFORMATION_MESSAGE);
+            } else {
+                JOptionPane.showMessageDialog(this, "No appointments found.");
+            }
+        } catch (SQLException ex) {
+            ex.printStackTrace();
+            JOptionPane.showMessageDialog(this, "Error executing SQL query: " + ex.getMessage(), "Error", JOptionPane.ERROR_MESSAGE);
+        }
     }
 
     public static void main(String[] args) {
