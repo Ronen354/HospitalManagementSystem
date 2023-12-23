@@ -1,5 +1,17 @@
 # Hospital Management System
 
+# JAVA GROUP ASSIGNMENT
+NAME                                                               ID                             
+ABUBEKER SALIH ABUBEKER                                          T/0414/14
+AHMED   
+
+
+
+
+
+
+
+
 This is a simple Hospital Management System implemented in Java, using Swing for the graphical user interface and MySQL for database management.
 
 ## Table of Contents
